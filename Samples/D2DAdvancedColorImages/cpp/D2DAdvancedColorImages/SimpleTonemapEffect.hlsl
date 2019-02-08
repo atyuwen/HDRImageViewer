@@ -69,7 +69,7 @@ float channelTonemap(float input)
         return rb2(
             t,
             midLimit, outputMax, outputMax, // p0, p1, p2
-            w0      , w1       , w1);
+            1.0     , w1       , w1);
     }
     else
     {
