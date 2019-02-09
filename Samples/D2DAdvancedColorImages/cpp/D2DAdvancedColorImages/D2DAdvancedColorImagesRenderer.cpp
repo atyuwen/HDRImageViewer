@@ -47,6 +47,17 @@ static const unsigned int sc_histNumBins = 400;
 static const float        sc_histGamma = 0.1f;
 static const unsigned int sc_histMaxNits = 1000000;
 
+// Helper to do white level scaling.
+inline D2D1::Matrix5x4F ScaleMat(float scale)
+{
+	return D2D1::Matrix5x4F(
+		scale, 0, 0, 0,  // [R] Multiply each color channel
+		0, scale, 0, 0,  // [G] by the scale factor in 
+		0, 0, scale, 0,  // [B] linear gamma space.
+		0, 0, 0, 1,		 // [A] Preserve alpha values.
+		0, 0, 0, 0);     //     No offset.
+}
+
 D2DAdvancedColorImagesRenderer::D2DAdvancedColorImagesRenderer(
     const std::shared_ptr<DX::DeviceResources>& deviceResources
     ) :
@@ -124,7 +135,7 @@ void D2DAdvancedColorImagesRenderer::SetRenderOptions(
 {
     m_dispInfo = acInfo;
     m_renderEffectKind = effect;
-    m_brightnessAdjust = brightnessAdjustment;
+	m_brightnessAdjust = brightnessAdjustment;
 
     auto sdrWhite = m_dispInfo ? m_dispInfo->SdrWhiteLevelInNits : sc_nominalRefWhite;
 
@@ -181,7 +192,7 @@ void D2DAdvancedColorImagesRenderer::SetRenderOptions(
         break;
     }
 
-    float targetMaxNits = GetBestDispMaxLuminance();
+	float targetMaxNits = GetBestDispMaxLuminance();
 
     // Update HDR tonemappers with display information.
     // The 1803 custom tonemapper uses mostly the same property definitions as the 1809 Direct2D tonemapper, for simplicity.
@@ -212,11 +223,22 @@ void D2DAdvancedColorImagesRenderer::SetRenderOptions(
         // Both the D2D and custom HDR tonemappers output values in scRGB using scene-referred luminance - a typical SDR display will
         // be around numeric range [0.0, 3.0] corresponding to [0, 240 nits]. To encode correctly for an SDR/WCG display
         // output, we must reinterpret the scene-referred input content (80 nits) as display-referred (targetMaxNits).
-        DX::ThrowIfFailed(
-            m_sdrWhiteScaleEffect->SetValue(D2D1_WHITELEVELADJUSTMENT_PROP_INPUT_WHITE_LEVEL, D2D1_SCENE_REFERRED_SDR_WHITE_LEVEL));
+		if (DX::CheckPlatformSupport(DX::Win1809))
+		{
+			DX::ThrowIfFailed(
+				m_sdrWhiteScaleEffect->SetValue(D2D1_WHITELEVELADJUSTMENT_PROP_INPUT_WHITE_LEVEL, D2D1_SCENE_REFERRED_SDR_WHITE_LEVEL));
 
-        DX::ThrowIfFailed(
-            m_sdrWhiteScaleEffect->SetValue(D2D1_WHITELEVELADJUSTMENT_PROP_OUTPUT_WHITE_LEVEL, targetMaxNits));
+			DX::ThrowIfFailed(
+				m_sdrWhiteScaleEffect->SetValue(D2D1_WHITELEVELADJUSTMENT_PROP_OUTPUT_WHITE_LEVEL, targetMaxNits));
+		}
+		else
+		{
+			// Without the 1809 white scale effect, use a color matrix to emulate behavior.
+			DX::ThrowIfFailed(
+				m_sdrWhiteScaleEffect->SetValue(
+					D2D1_COLORMATRIX_PROP_COLOR_MATRIX,
+					ScaleMat(D2D1_SCENE_REFERRED_SDR_WHITE_LEVEL / targetMaxNits)));
+		}
     }
 
     Draw();
@@ -425,10 +447,9 @@ void D2DAdvancedColorImagesRenderer::CreateImageDependentResources()
     }
     else
     {
+		// For 1803, use custom implementations.
         tonemapper = CLSID_CustomSimpleTonemapEffect;
-
-        // For 1803, this effect should never actually be rendered. Invert is a good "sentinel".
-        sdrWhiteScale = CLSID_D2D1Invert;
+        sdrWhiteScale = CLSID_D2D1ColorMatrix;
     }
 
     DX::ThrowIfFailed(
@@ -979,14 +1000,7 @@ void D2DAdvancedColorImagesRenderer::UpdateWhiteLevelScale(float brightnessAdjus
 
     // SDR white level scaling is performing by multiplying RGB color values in linear gamma.
     // We implement this with a Direct2D matrix effect.
-    D2D1_MATRIX_5X4_F matrix = D2D1::Matrix5x4F(
-        scale, 0, 0, 0,  // [R] Multiply each color channel
-        0, scale, 0, 0,  // [G] by the scale factor in 
-        0, 0, scale, 0,  // [B] linear gamma space.
-        0, 0, 0    , 1,  // [A] Preserve alpha values.
-        0, 0, 0    , 0); //     No offset.
-
-    DX::ThrowIfFailed(m_whiteScaleEffect->SetValue(D2D1_COLORMATRIX_PROP_COLOR_MATRIX, matrix));
+    DX::ThrowIfFailed(m_whiteScaleEffect->SetValue(D2D1_COLORMATRIX_PROP_COLOR_MATRIX, ScaleMat(scale)));
 }
 
 // Call this after updating any spatial transform state to regenerate the effect graph.
