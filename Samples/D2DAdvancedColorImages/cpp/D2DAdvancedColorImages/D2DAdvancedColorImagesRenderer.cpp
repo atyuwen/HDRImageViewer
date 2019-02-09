@@ -135,7 +135,7 @@ void D2DAdvancedColorImagesRenderer::SetRenderOptions(
 {
     m_dispInfo = acInfo;
     m_renderEffectKind = effect;
-	m_brightnessAdjust = brightnessAdjustment;
+    m_brightnessAdjust = 1.0f; // DEBUG
 
     auto sdrWhite = m_dispInfo ? m_dispInfo->SdrWhiteLevelInNits : sc_nominalRefWhite;
 
@@ -192,7 +192,7 @@ void D2DAdvancedColorImagesRenderer::SetRenderOptions(
         break;
     }
 
-	float targetMaxNits = GetBestDispMaxLuminance();
+    float targetMaxNits = 100 * brightnessAdjustment; // 8 to 1600 nits. DEBUG
 
     // Update HDR tonemappers with display information.
     // The 1803 custom tonemapper uses mostly the same property definitions as the 1809 Direct2D tonemapper, for simplicity.

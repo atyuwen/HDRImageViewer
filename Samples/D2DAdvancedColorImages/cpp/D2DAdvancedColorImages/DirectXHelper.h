@@ -43,7 +43,7 @@ namespace DX
             break;
 
         case Win1809:
-            apiLevel = 7;
+            apiLevel = 8; // DEBUG
             break;
 
         default:
