@@ -86,13 +86,14 @@ namespace HDRImageViewer
 
         // Resources used to draw the DirectX content in the XAML page.
         std::shared_ptr<DX::DeviceResources>            m_deviceResources;
-        std::unique_ptr<HDRImageViewerRenderer> m_renderer;
+        std::unique_ptr<HDRImageViewerRenderer>         m_renderer;
         Windows::UI::Input::GestureRecognizer^          m_gestureRecognizer;
         bool                                            m_isWindowVisible;
 
         // Cached information for UI.
-        HDRImageViewer::ImageInfo               m_imageInfo;
-        HDRImageViewer::ImageCLL                m_imageCLL;
+        HDRImageViewer::ImageInfo                       m_imageInfo;
+        HDRImageViewer::ImageInfo                       m_tempInfo;
+        HDRImageViewer::ImageCLL                        m_imageCLL;
         bool                                            m_isImageValid;
         Windows::Graphics::Display::AdvancedColorInfo^  m_dispInfo;
         RenderOptionsViewModel^                         m_renderOptionsViewModel;
