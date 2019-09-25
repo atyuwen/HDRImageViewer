@@ -175,6 +175,9 @@ void HDRImageViewerRenderer::SetRenderOptions(
     // a reasonable level - the Direct2D tonemapper performs nearly a no-op if input < output max nits.
     maxCLL = max(maxCLL, 0.5f * targetMaxNits);
 
+	// MOD(atyuwen)
+	maxCLL = 1000.0f;
+
     DX::ThrowIfFailed(m_hdrTonemapEffect->SetValue(D2D1_HDRTONEMAP_PROP_INPUT_MAX_LUMINANCE, maxCLL));
 
     // The 1809 Direct2D tonemapper optimizes for HDR or SDR displays; the 1803 custom tonemapper ignores this hint.
@@ -706,6 +709,12 @@ void HDRImageViewerRenderer::EmitHdrMetadata()
 
         // DXGI_HDR_METADATA_HDR10 defines MaxCLL in integer nits.
         metadata.MaxContentLightLevel = static_cast<UINT16>(effectiveMaxCLL);
+
+		// MOD(atyuwen)
+		metadata.MaxMasteringLuminance = 1000;
+		metadata.MinMasteringLuminance = 0.05;
+		metadata.MaxContentLightLevel = 1000;
+		metadata.MaxFrameAverageLightLevel = 180;
 
         // The luminance analysis doesn't calculate MaxFrameAverageLightLevel. We also don't have mastering
         // information (i.e. reference display in a studio), so Min/MaxMasteringLuminance is not relevant.
