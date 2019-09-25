@@ -236,10 +236,12 @@ void DirectXPage::LoadImage(_In_ StorageFile^ imageFile)
         if (m_imageInfo.imageKind == AdvancedColorKind::HighDynamicRange)
         {
             ExportImageButton->IsEnabled = true;
+			ExportImageMessiah->IsEnabled = true;
         }
         else
         {
             ExportImageButton->IsEnabled = false;
+			ExportImageMessiah->IsEnabled = false;
         }
 
         UpdateDefaultRenderOptions();
@@ -282,6 +284,16 @@ void DirectXPage::ExportImageToSdr(_In_ Windows::Storage::StorageFile ^ file)
         DX::ThrowIfFailed(CreateStreamOverRandomAccessStream(ras, IID_PPV_ARGS(&iStream)));
         m_renderer->ExportImageToSdr(iStream.Get(), wicFormat);
     });
+}
+
+void HDRImageViewer::DirectXPage::ExportImageToMessiah(_In_ Windows::Storage::StorageFile^ file)
+{
+	GUID wicFormat = GUID_ContainerFormatPng;
+	create_task(file->OpenAsync(FileAccessMode::ReadWrite)).then([=](IRandomAccessStream^ ras) {
+		ComPtr<IStream> iStream;
+		DX::ThrowIfFailed(CreateStreamOverRandomAccessStream(ras, IID_PPV_ARGS(&iStream)));
+		m_renderer->ExportImageToMessiah(iStream.Get(), wicFormat);
+	});
 }
 
 void DirectXPage::UpdateDisplayACState(_In_opt_ AdvancedColorInfo^ info)
@@ -361,6 +373,24 @@ void DirectXPage::ExportImageButtonClick(Platform::Object^ sender, Windows::UI::
     });
 }
 
+void HDRImageViewer::DirectXPage::ExportImageMessiah_Click(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e)
+{
+	FileSavePicker^ picker = ref new FileSavePicker();
+	picker->SuggestedStartLocation = PickerLocationId::PicturesLibrary;
+	picker->CommitButtonText = L"Export image to Messiah RGBM";
+
+	auto pngExtensions = ref new Platform::Collections::Vector<String^>(1, L".png");
+	picker->FileTypeChoices->Insert(L"PNG image", pngExtensions);
+
+	std::shared_ptr<GUID> wicFormatPtr = std::make_shared<GUID>();
+
+	create_task(picker->PickSaveFileAsync()).then([=](StorageFile^ pickedFile) {
+		if (pickedFile != nullptr)
+		{
+			ExportImageToMessiah(pickedFile);
+		}
+	});
+}
 
 // Saves the current state of the app for suspend and terminate events.
 void DirectXPage::SaveInternalState(_In_ IPropertySet^ state)

@@ -76,6 +76,94 @@ void ImageExporter::ExportToSdr(ImageLoader* loader, DX::DeviceResources* res, I
     ImageExporter::ExportToWic(d2dImage.Get(), loader->GetImageInfo().size, res, stream, wicFormat);
 }
 
+float scRGBtoMessiahRGB(float c)
+{
+	float luminance = c * 80.0f;
+	float start = 0.0f, end = 8.0f;
+	while ((end - start) > 0.01f)
+	{
+		float x = (start + end) / 2;
+		float y = (200.276765 * x + 1.379809)* x / ((0.039350 * x + 0.958296) * x + 0.171154);
+		if (y < luminance)
+			start = x;
+		else
+			end = x;
+	}
+	return start;
+}
+
+float saturate(float x)
+{
+	return min(max(x, 0.0f), 1.0f);
+}
+
+void EncodeRGMB(DirectX::XMFLOAT4& color)
+{
+	float x = color.x / 8.0f;
+	float y = color.y / 8.0f;
+	float z = color.z / 8.0f;
+	float a = max(x, max(y, max(z, 1.1f / 65025)));
+	a = sqrt(saturate(a));
+	a = ceil(a * 255.0) / 255.0;
+	float s = 1.0f / (a * a);
+	color.x = x * s;
+	color.y = y * s;
+	color.z = z * s;
+	color.w = a;
+}
+
+void ImageExporter::ExportToMessiah(_In_ ImageLoader* loader, _In_ DX::DeviceResources* res, IStream* stream, GUID wicFormat)
+{
+	auto size = loader->GetImageInfo().size;
+	std::vector<DirectX::XMFLOAT4> data = DumpD2DImage(loader->GetLoadedImage(1.0f), res, size);
+	std::vector<byte> outbuffer(size.Width * size.Height * 4);
+	
+	for (int i = 0; i < size.Height; ++i)
+	{
+		for (int j = 0; j < size.Width; ++j)
+		{
+			int index = i * size.Width + j;
+			auto color = data[index];
+
+			// Save to SDR
+			//color.x = pow(saturate(color.x / 4), 0.45);
+			//color.y = pow(saturate(color.y / 4), 0.45);
+			//color.z = pow(saturate(color.z / 4), 0.45);
+
+			// Save to Messiah RGMB
+			color.x = scRGBtoMessiahRGB(color.x);
+			color.y = scRGBtoMessiahRGB(color.y);
+			color.z = scRGBtoMessiahRGB(color.z);
+			EncodeRGMB(color);
+
+			outbuffer[index * 4 + 0] = color.z * 255;
+			outbuffer[index * 4 + 1] = color.y * 255;
+			outbuffer[index * 4 + 2] = color.x * 255;
+			outbuffer[index * 4 + 3] = 255;
+		}
+	}
+
+	auto dev = res->GetD2DDevice();
+	auto wic = res->GetWicImagingFactory();
+
+	ComPtr<IWICBitmapEncoder> encoder;
+	CHK(wic->CreateEncoder(wicFormat, nullptr, &encoder));
+	CHK(encoder->Initialize(stream, WICBitmapEncoderNoCache));
+
+	ComPtr<IWICBitmapFrameEncode> frame;
+	CHK(encoder->CreateNewFrame(&frame, nullptr));
+	CHK(frame->Initialize(nullptr));
+
+	auto outformat = GUID_WICPixelFormat32bppRGBA;
+	frame->SetPixelFormat(&outformat);
+	frame->SetSize(size.Width, size.Height);
+	frame->WritePixels(size.Height, size.Width * 4, outbuffer.size(), outbuffer.data());
+
+	CHK(frame->Commit());
+	CHK(encoder->Commit());
+	CHK(stream->Commit(STGC_DEFAULT));
+}
+
 /// <summary>
 /// Copies D2D target bitmap (typically same as swap chain) data into CPU accessible memory. Primarily for debug/test purposes.
 /// </summary>
@@ -124,6 +212,43 @@ std::vector<DirectX::XMFLOAT4> ImageExporter::DumpD2DTarget(DX::DeviceResources*
     return pixels;
 }
 
+std::vector<DirectX::XMFLOAT4> HDRImageViewer::ImageExporter::DumpD2DImage(_In_ ID2D1Image* image, _In_ DX::DeviceResources* res, Windows::Foundation::Size size)
+{
+	auto ras = ref new Windows::Storage::Streams::InMemoryRandomAccessStream();
+	ComPtr<IStream> stream;
+	CHK(CreateStreamOverRandomAccessStream(ras, IID_PPV_ARGS(&stream)));
+	ExportToWic(image, size, res, stream.Get(), GUID_ContainerFormatWmp);
+
+	// WIC decoders require stream to be at position 0.
+	LARGE_INTEGER zero = {};
+	ULARGE_INTEGER ignore = {};
+	CHK(stream->Seek(zero, 0, &ignore));
+
+	auto wic = res->GetWicImagingFactory();
+	ComPtr<IWICBitmapDecoder> decode;
+	CHK(wic->CreateDecoderFromStream(stream.Get(), nullptr, WICDecodeMetadataCacheOnDemand, &decode));
+
+	ComPtr<IWICBitmapFrameDecode> frame;
+	CHK(decode->GetFrame(0, &frame));
+	GUID fmt = {};
+	CHK(frame->GetPixelFormat(&fmt));
+	uint32 w, h;
+	frame->GetSize(&w, &h);
+	CHK(fmt == GUID_WICPixelFormat128bppRGBAFloat ? S_OK : WINCODEC_ERR_UNSUPPORTEDPIXELFORMAT); // FP16
+
+	auto width = static_cast<uint32_t>(size.Width);
+	auto height = static_cast<uint32_t>(size.Height);
+
+	std::vector<DirectX::XMFLOAT4> pixels = std::vector<DirectX::XMFLOAT4>(width * height);
+	CHK(frame->CopyPixels(
+		nullptr,                                                            // Rect
+		width * sizeof(DirectX::XMFLOAT4),                                  // Stride (bytes)
+		static_cast<uint32_t>(pixels.size() * sizeof(DirectX::XMFLOAT4)),   // Total size (bytes)
+		reinterpret_cast<byte*>(pixels.data())));                           // Buffer
+
+	return pixels;
+}
+
 /// <summary>
 /// Encodes to WIC using default encode options.
 /// </summary>
@@ -155,6 +280,12 @@ void ImageExporter::ExportToWic(ID2D1Image* img, Windows::Foundation::Size size,
         static_cast<uint32_t>(size.Width), // SizeX
         static_cast<uint32_t>(size.Height) // SizeY
     };
+
+	if (wicFormat == GUID_ContainerFormatWmp)
+	{
+		auto wicPixelFormat = GUID_WICPixelFormat128bppRGBAFloat;
+		frame->SetPixelFormat(&wicPixelFormat);
+	}
 
     ComPtr<IWICImageEncoder> imageEncoder;
     CHK(wic->CreateImageEncoder(dev, &imageEncoder));

@@ -222,6 +222,11 @@ void HDRImageViewerRenderer::ExportImageToSdr(_In_ IStream* outputStream, GUID w
     ImageExporter::ExportToSdr(m_imageLoader.get(), m_deviceResources.get(), outputStream, wicFormat);
 }
 
+void HDRImageViewerRenderer::ExportImageToMessiah(_In_ IStream* outputStream, GUID wicFormat)
+{
+	ImageExporter::ExportToMessiah(m_imageLoader.get(), m_deviceResources.get(), outputStream, wicFormat);
+}
+
 // Configures a Direct2D image pipeline, including source, color management, 
 // tonemapping, and white level, based on the loaded image.
 void HDRImageViewerRenderer::CreateImageDependentResources()

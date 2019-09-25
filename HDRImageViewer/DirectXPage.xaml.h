@@ -48,8 +48,11 @@ namespace HDRImageViewer
         void SliderChanged(_In_ Platform::Object^ sender, _In_ Windows::UI::Xaml::Controls::Primitives::RangeBaseValueChangedEventArgs^ e);
         void ComboChanged(_In_ Platform::Object^ sender, _In_ Windows::UI::Xaml::Controls::SelectionChangedEventArgs^ e);
         void ExportImageButtonClick(_In_ Platform::Object^ sender, _In_ Windows::UI::Xaml::RoutedEventArgs^ e);
+		void ExportImageMessiah_Click(Platform::Object^ sender, Windows::UI::Xaml::RoutedEventArgs^ e);
 
         void ExportImageToSdr(_In_ Windows::Storage::StorageFile^ file);
+		void ExportImageToMessiah(_In_ Windows::Storage::StorageFile^ file);
+
         void UpdateDisplayACState(_In_opt_ Windows::Graphics::Display::AdvancedColorInfo^ info);
         void UpdateDefaultRenderOptions();
         void UpdateRenderOptions();
@@ -95,6 +98,7 @@ namespace HDRImageViewer
         bool                                            m_isImageValid;
         Windows::Graphics::Display::AdvancedColorInfo^  m_dispInfo;
         RenderOptionsViewModel^                         m_renderOptionsViewModel;
-    };
+
+	};
 }
 
