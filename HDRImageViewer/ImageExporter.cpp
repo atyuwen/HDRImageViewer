@@ -78,9 +78,9 @@ void ImageExporter::ExportToSdr(ImageLoader* loader, DX::DeviceResources* res, I
 
 float scRGBtoMessiahRGB(float c)
 {
-	float luminance = c * 80.0f;
+	float luminance = max(c, 0.0) * 80.0f;
 	float start = 0.0f, end = 8.0f;
-	while ((end - start) > 0.01f)
+	while ((end - start) > 0.001f)
 	{
 		float x = (start + end) / 2;
 		float y = (200.276765 * x + 1.379809)* x / ((0.039350 * x + 0.958296) * x + 0.171154);
@@ -139,7 +139,7 @@ void ImageExporter::ExportToMessiah(_In_ ImageLoader* loader, _In_ DX::DeviceRes
 			outbuffer[index * 4 + 0] = color.z * 255;
 			outbuffer[index * 4 + 1] = color.y * 255;
 			outbuffer[index * 4 + 2] = color.x * 255;
-			outbuffer[index * 4 + 3] = 255;
+			outbuffer[index * 4 + 3] = color.w * 255;
 		}
 	}
 
