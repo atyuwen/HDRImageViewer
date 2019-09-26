@@ -39,4 +39,46 @@ namespace Utils
 		color.w = a;
 	}
 
+	static float half_to_float(uint16 Value) noexcept
+	{
+		uint32 Mantissa = 0;
+		uint32 Exponent = 0;
+		uint32 Result = 0;
+
+		Mantissa = (uint32)(Value & 0x03FF);
+
+		if ((Value & 0x7C00) != 0)  // The value is normalized
+		{
+			Exponent = (uint32)((Value >> 10) & 0x1F);
+		}
+		else if (Mantissa != 0)     // The value is denormalized
+		{
+			// Normalize the value in the resulting float
+			Exponent = 1;
+			do
+			{
+				Exponent--;
+				Mantissa <<= 1;
+			} while ((Mantissa & 0x0400) == 0);
+
+			Mantissa &= 0x03FF;
+		}
+		else                        // The value is zero
+		{
+			Exponent = (uint32)-112;
+		}
+
+		Result = ((Value & 0x8000) << 16) | // Sign
+			((Exponent + 112) << 23) | // Exponent
+			(Mantissa << 13);          // Mantissa
+
+		union
+		{
+			float f;
+			uint32 i = 0;
+		}s;
+		s.i = Result;
+
+		return s.f;
+	}
 }

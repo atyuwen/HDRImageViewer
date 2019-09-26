@@ -12,6 +12,7 @@
 #include "pch.h"
 #include "DeviceResources.h"
 #include "DirectXHelper.h"
+#include "Utils.h"
 #include <windows.ui.xaml.media.dxinterop.h>
 
 using namespace D2D1;
@@ -230,6 +231,8 @@ void DX::DeviceResources::CreateWindowSizeDependentResources()
     m_d2dContext->SetTarget(nullptr);
     m_d2dTargetBitmap = nullptr;
     m_d3dDepthStencilView = nullptr;
+	m_backbuffer = nullptr;
+	m_stagebuffer = nullptr;
     m_d3dContext->Flush();
 
     // Calculate the necessary swap chain and render target size in pixels.
@@ -421,18 +424,32 @@ void DX::DeviceResources::CreateWindowSizeDependentResources()
 
 
     // Create a render target view of the swap chain back buffer.
-    ComPtr<ID3D11Texture2D> backBuffer;
     DX::ThrowIfFailed(
-        m_swapChain->GetBuffer(0, IID_PPV_ARGS(&backBuffer))
+        m_swapChain->GetBuffer(0, IID_PPV_ARGS(&m_backbuffer))
         );
 
     DX::ThrowIfFailed(
         m_d3dDevice->CreateRenderTargetView(
-            backBuffer.Get(),
+			m_backbuffer.Get(),
             nullptr,
             &m_d3dRenderTargetView
             )
         );
+
+	// Create the staging texture that we need to download the pixels from gpu.
+	D3D11_TEXTURE2D_DESC tex_desc;
+	tex_desc.Width = m_d3dRenderTargetSize.Width;
+	tex_desc.Height = m_d3dRenderTargetSize.Height;
+	tex_desc.MipLevels = 1;
+	tex_desc.ArraySize = 1; /* When using a texture array. */
+	tex_desc.Format = sc_swapChainFormat; /* This is the default data when using desktop duplication, see https://msdn.microsoft.com/en-us/library/windows/desktop/hh404611(v=vs.85).aspx */
+	tex_desc.SampleDesc.Count = 1; /* MultiSampling, we can use 1 as we're just downloading an existing one. */
+	tex_desc.SampleDesc.Quality = 0; /* "" */
+	tex_desc.Usage = D3D11_USAGE_STAGING;
+	tex_desc.BindFlags = 0;
+	tex_desc.CPUAccessFlags = D3D11_CPU_ACCESS_READ;
+	tex_desc.MiscFlags = 0;
+	m_d3dDevice->CreateTexture2D(&tex_desc, NULL, &m_stagebuffer);
 
     // Create a depth stencil view for use with 3D rendering if needed.
     CD3D11_TEXTURE2D_DESC depthStencilDesc(
@@ -642,6 +659,9 @@ void DX::DeviceResources::Trim()
 // Present the contents of the swap chain to the screen.
 void DX::DeviceResources::Present() 
 {
+	// Copy back buffer for pixel reading.
+	m_d3dContext->CopyResource(m_stagebuffer.Get(), m_backbuffer.Get());
+
     // The first argument instructs DXGI to block until VSync, putting the application
     // to sleep until the next VSync. This ensures we don't waste any cycles rendering
     // frames that will never be displayed to the screen.
@@ -650,7 +670,7 @@ void DX::DeviceResources::Present()
     // Discard the contents of the render target.
     // This is a valid operation only when the existing contents will be entirely
     // overwritten. If dirty or scroll rects are used, this call should be removed.
-    m_d3dContext->DiscardView(m_d3dRenderTargetView.Get());
+    //m_d3dContext->DiscardView(m_d3dRenderTargetView.Get());
 
     // Discard the contents of the depth stencil.
     m_d3dContext->DiscardView(m_d3dDepthStencilView.Get());
@@ -665,6 +685,25 @@ void DX::DeviceResources::Present()
     {
         DX::ThrowIfFailed(hr);
     }
+}
+
+DirectX::XMFLOAT4 DX::DeviceResources::ReadPixel(float px, float py)
+{
+	float scale = m_dpi / 96.0f;
+	int x = int(px * scale);
+	int y = int(py * scale);
+	D3D11_MAPPED_SUBRESOURCE map;
+	CHK(m_d3dContext->Map(m_stagebuffer.Get(), 0, D3D11_MAP_READ, 0, &map));
+	DirectX::XMFLOAT4 color;
+	byte* data = (byte*)map.pData;
+	data = data + map.RowPitch * y + (x * 8);
+	uint16* pcolor = (uint16*)data;
+	color.x = Utils::half_to_float(pcolor[0]);
+	color.y = Utils::half_to_float(pcolor[1]);
+	color.z = Utils::half_to_float(pcolor[2]);
+	color.w = Utils::half_to_float(pcolor[3]);
+	m_d3dContext->Unmap(m_stagebuffer.Get(), 0);
+	return color;
 }
 
 // This method determines the rotation between the display device's native Orientation and the

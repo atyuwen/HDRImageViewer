@@ -44,6 +44,7 @@ namespace HDRImageViewer
         // UI element event handlers.
         void LoadImageButtonClick(_In_ Platform::Object^ sender, _In_ Windows::UI::Xaml::RoutedEventArgs^ e);
         void CheckBoxChanged(_In_ Platform::Object^ sender, _In_ Windows::UI::Xaml::RoutedEventArgs^ e);
+		void OnKeyDown(_In_ Windows::UI::Core::CoreWindow^ sender, _In_ Windows::UI::Core::KeyEventArgs^ args);
         void OnKeyUp(_In_ Windows::UI::Core::CoreWindow^ sender, _In_ Windows::UI::Core::KeyEventArgs^ args);
         void SliderChanged(_In_ Platform::Object^ sender, _In_ Windows::UI::Xaml::Controls::Primitives::RangeBaseValueChangedEventArgs^ e);
         void ComboChanged(_In_ Platform::Object^ sender, _In_ Windows::UI::Xaml::Controls::SelectionChangedEventArgs^ e);
@@ -92,6 +93,7 @@ namespace HDRImageViewer
         std::unique_ptr<HDRImageViewerRenderer>         m_renderer;
         Windows::UI::Input::GestureRecognizer^          m_gestureRecognizer;
         bool                                            m_isWindowVisible;
+		bool											m_isPicking;
 
         // Cached information for UI.
         HDRImageViewer::ImageInfo                       m_imageInfo;

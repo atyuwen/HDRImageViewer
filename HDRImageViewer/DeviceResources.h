@@ -35,6 +35,8 @@ namespace DX
         void RegisterDeviceNotify(IDeviceNotify* deviceNotify);
         void Trim();
         void Present();
+		
+		DirectX::XMFLOAT4 ReadPixel(float x, float y);
 
         // Device Accessors.
         Windows::Foundation::Size   GetOutputSize() const                   { return m_outputSize; }
@@ -71,6 +73,8 @@ namespace DX
         Microsoft::WRL::ComPtr<ID3D11DeviceContext3>    m_d3dContext;
         Microsoft::WRL::ComPtr<IDXGIFactory2>           m_dxgiFactory;
         Microsoft::WRL::ComPtr<IDXGISwapChain3>         m_swapChain;
+		Microsoft::WRL::ComPtr<ID3D11Texture2D>			m_backbuffer;
+		Microsoft::WRL::ComPtr<ID3D11Texture2D>			m_stagebuffer;
 
         // Direct3D rendering objects. Required for 3D.
         Microsoft::WRL::ComPtr<ID3D11RenderTargetView>  m_d3dRenderTargetView;

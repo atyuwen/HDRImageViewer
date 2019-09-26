@@ -145,8 +145,6 @@ std::vector<DirectX::XMFLOAT4> ImageExporter::DumpD2DTarget(DX::DeviceResources*
     CHK(CreateStreamOverRandomAccessStream(ras, IID_PPV_ARGS(&stream)));
 
     auto d2dBitmap = res->GetD2DTargetBitmap();
-	float dpiX = 0, dpiY = 0;
-	d2dBitmap->GetDpi(&dpiX, &dpiY);
     auto d2dSize = d2dBitmap->GetPixelSize();
     auto size = Windows::Foundation::Size(static_cast<float>(d2dSize.width), static_cast<float>(d2dSize.height));
 

@@ -42,13 +42,15 @@ DirectXPage::DirectXPage() :
     m_isWindowVisible(true),
     m_imageInfo{},
     m_isImageValid(false),
-    m_imageCLL{ -1.0f, -1.0f }
+    m_imageCLL{ -1.0f, -1.0f },
+	m_isPicking{false}
 {
     InitializeComponent();
 
     // Register event handlers for page lifecycle.
     CoreWindow^ window = Window::Current->CoreWindow;
 
+	window->KeyDown += ref new TypedEventHandler<CoreWindow^, KeyEventArgs^>(this, &DirectXPage::OnKeyDown);
     window->KeyUp += ref new TypedEventHandler<CoreWindow ^, KeyEventArgs ^>(this, &DirectXPage::OnKeyUp);
 
     window->VisibilityChanged +=
@@ -299,10 +301,7 @@ void HDRImageViewer::DirectXPage::ExportImageToMessiah(_In_ Windows::Storage::St
 
 void HDRImageViewer::DirectXPage::PickImageColor(_In_ Windows::UI::Input::PointerPoint^ point)
 {
-	auto x = (int)point->Position.X;
-	auto y = (int)point->Position.Y;
-	auto color = m_renderer->PickImagetColor(x, y);
-
+	auto color = m_deviceResources->ReadPixel(point->Position.X, point->Position.Y);
 	float lumiance = 0.2126 * color.x + 0.7152 * color.y + 0.0722 * color.z;
 	int lumianceNits = (int)(lumiance * 80);
 	Luminance->Text = L"Luminance: " + ref new String(std::to_wstring(lumianceNits).c_str()) + L" nits";
@@ -562,6 +561,15 @@ String^ DirectXPage::ConvertACKindToString(AdvancedColorKind kind)
     return displayString;
 }
 
+void DirectXPage::OnKeyDown(_In_ CoreWindow^ sender, _In_ KeyEventArgs^ args)
+{
+	if (VirtualKey::Control == args->VirtualKey)
+	{
+		sender->PointerCursor = ref new Windows::UI::Core::CoreCursor(Windows::UI::Core::CoreCursorType::Cross, 0);
+		m_isPicking = true;
+	}
+}
+
 void DirectXPage::OnKeyUp(_In_ CoreWindow^ sender, _In_ KeyEventArgs^ args)
 {
     if (VirtualKey::H == args->VirtualKey)
@@ -594,6 +602,11 @@ void DirectXPage::OnKeyUp(_In_ CoreWindow^ sender, _In_ KeyEventArgs^ args)
             ApplicationView::GetForCurrentView()->ExitFullScreenMode();
         }
     }
+	else if (VirtualKey::Control == args->VirtualKey)
+	{
+		m_isPicking = false;
+		sender->PointerCursor = ref new Windows::UI::Core::CoreCursor(Windows::UI::Core::CoreCursorType::Arrow, 0);
+	}
 }
 
 void DirectXPage::SliderChanged(_In_ Object^ sender, _In_ RangeBaseValueChangedEventArgs^ e)
@@ -621,10 +634,15 @@ void DirectXPage::ComboChanged(_In_ Object^ sender, _In_ SelectionChangedEventAr
 // Send low level pointer events to GestureRecognizer to be interpreted.
 void DirectXPage::OnPointerPressed(_In_ Object^ sender, _In_ PointerRoutedEventArgs^ e)
 {
-    swapChainPanel->CapturePointer(e->Pointer);
-    m_gestureRecognizer->ProcessDownEvent(e->GetCurrentPoint(swapChainPanel));
-
-	PickImageColor(e->GetCurrentPoint(swapChainPanel));
+	if (m_isPicking)
+	{
+		PickImageColor(e->GetCurrentPoint(swapChainPanel));
+	}
+	else
+	{
+		swapChainPanel->CapturePointer(e->Pointer);
+		m_gestureRecognizer->ProcessDownEvent(e->GetCurrentPoint(swapChainPanel));
+	}
 }
 
 void DirectXPage::OnPointerMoved(_In_ Object^ sender, _In_ PointerRoutedEventArgs^ e)
