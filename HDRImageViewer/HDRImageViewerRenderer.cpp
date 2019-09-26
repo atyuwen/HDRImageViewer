@@ -227,6 +227,17 @@ void HDRImageViewerRenderer::ExportImageToMessiah(_In_ IStream* outputStream, GU
 	ImageExporter::ExportToMessiah(m_imageLoader.get(), m_deviceResources.get(), outputStream, wicFormat);
 }
 
+
+DirectX::XMFLOAT4 HDRImageViewer::HDRImageViewerRenderer::PickImagetColor(int x, int y)
+{
+	std::vector<DirectX::XMFLOAT4> colors = ImageExporter::DumpD2DTarget(m_deviceResources.get());
+	auto size = m_deviceResources->GetD2DTargetBitmap()->GetPixelSize();
+	assert(0 <= x && x < size.width);
+	assert(0 <= y && y < size.height);
+	int index = y * size.width + x;
+	return colors[index];
+}
+
 // Configures a Direct2D image pipeline, including source, color management, 
 // tonemapping, and white level, based on the loaded image.
 void HDRImageViewerRenderer::CreateImageDependentResources()

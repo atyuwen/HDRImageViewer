@@ -52,6 +52,7 @@ namespace HDRImageViewer
 
         void ExportImageToSdr(_In_ Windows::Storage::StorageFile^ file);
 		void ExportImageToMessiah(_In_ Windows::Storage::StorageFile^ file);
+		void PickImageColor(_In_ Windows::UI::Input::PointerPoint^ point);
 
         void UpdateDisplayACState(_In_opt_ Windows::Graphics::Display::AdvancedColorInfo^ info);
         void UpdateDefaultRenderOptions();

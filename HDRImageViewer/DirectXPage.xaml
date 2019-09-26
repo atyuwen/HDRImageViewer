@@ -38,7 +38,10 @@
             <Style TargetType="TextBlock" x:Key="InfoLine">
                 <Setter Property="Margin" Value="16, 0, 8, 0" />
             </Style>
-            <Style TargetType="Button">
+			<Style TargetType="TextBlock" x:Key="InfoLineSub">
+				<Setter Property="Margin" Value="24, 0, 8, 0" />
+			</Style>
+			<Style TargetType="Button">
                 <Setter Property="HorizontalAlignment" Value="Stretch" />
                 <Setter Property="Margin" Value="8, 0, 8, 8" />
             </Style>
@@ -111,11 +114,18 @@
             <TextBlock Style="{StaticResource SectionTitle}">Display information</TextBlock>
             <TextBlock Style="{StaticResource InfoLine}" x:Name="DisplayACState">Kind:</TextBlock>
             <TextBlock Style="{StaticResource InfoLine}" x:Name="DisplayPeakLuminance">Peak luminance:</TextBlock>
-            <MenuFlyoutSeparator />
+			<MenuFlyoutSeparator />
+			<TextBlock Style="{StaticResource SectionTitle}">Pixel inspector</TextBlock>
+			<TextBlock Style="{StaticResource InfoLine}" x:Name="Luminance">Luminance:</TextBlock>
+			<TextBlock Style="{StaticResource InfoLine}"><Bold>Messiah RGB:</Bold></TextBlock>
+			<TextBlock Style="{StaticResource InfoLineSub}" x:Name="MessiahR">R:</TextBlock>
+			<TextBlock Style="{StaticResource InfoLineSub}" x:Name="MessiahG">G:</TextBlock>
+			<TextBlock Style="{StaticResource InfoLineSub}" x:Name="MessiahB">B:</TextBlock>
+			<MenuFlyoutSeparator />
             <TextBlock Style="{StaticResource SectionTitle}">Keyboard shortcuts</TextBlock>
             <TextBlock Style="{StaticResource InfoLine}"><Bold>H:</Bold> Toggle UI</TextBlock>
             <TextBlock Style="{StaticResource InfoLine}"><Bold>F, F11:</Bold> Toggle fullscreen</TextBlock>
-            <TextBlock Style="{StaticResource InfoLine}"><Bold>Esc:</Bold> Exit fullscreen</TextBlock>
-        </StackPanel>
+			<TextBlock Style="{StaticResource InfoLine}"><Bold>Esc:</Bold> Exit fullscreen</TextBlock>
+		</StackPanel>
     </Grid>
 </Page>

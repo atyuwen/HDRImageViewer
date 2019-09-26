@@ -3,6 +3,7 @@
 #include "ImageExporter.h"
 #include "MagicConstants.h"
 #include "SimpleTonemapEffect.h"
+#include "Utils.h"
 
 using namespace Microsoft::WRL;
 
@@ -76,42 +77,6 @@ void ImageExporter::ExportToSdr(ImageLoader* loader, DX::DeviceResources* res, I
     ImageExporter::ExportToWic(d2dImage.Get(), loader->GetImageInfo().size, res, stream, wicFormat);
 }
 
-float scRGBtoMessiahRGB(float c)
-{
-	float luminance = max(c, 0.0) * 80.0f;
-	float start = 0.0f, end = 8.0f;
-	while ((end - start) > 0.001f)
-	{
-		float x = (start + end) / 2;
-		float y = (200.276765 * x + 1.379809)* x / ((0.039350 * x + 0.958296) * x + 0.171154);
-		if (y < luminance)
-			start = x;
-		else
-			end = x;
-	}
-	return start;
-}
-
-float saturate(float x)
-{
-	return min(max(x, 0.0f), 1.0f);
-}
-
-void EncodeRGMB(DirectX::XMFLOAT4& color)
-{
-	float x = color.x / 8.0f;
-	float y = color.y / 8.0f;
-	float z = color.z / 8.0f;
-	float a = max(x, max(y, max(z, 1.1f / 65025)));
-	a = sqrt(saturate(a));
-	a = ceil(a * 255.0) / 255.0;
-	float s = 1.0f / (a * a);
-	color.x = x * s;
-	color.y = y * s;
-	color.z = z * s;
-	color.w = a;
-}
-
 void ImageExporter::ExportToMessiah(_In_ ImageLoader* loader, _In_ DX::DeviceResources* res, IStream* stream, GUID wicFormat)
 {
 	auto size = loader->GetImageInfo().size;
@@ -126,15 +91,15 @@ void ImageExporter::ExportToMessiah(_In_ ImageLoader* loader, _In_ DX::DeviceRes
 			auto color = data[index];
 
 			// Save to SDR
-			//color.x = pow(saturate(color.x / 4), 0.45);
-			//color.y = pow(saturate(color.y / 4), 0.45);
-			//color.z = pow(saturate(color.z / 4), 0.45);
+			//color.x = pow(Utils::saturate(color.x / 4), 0.45);
+			//color.y = pow(Utils::saturate(color.y / 4), 0.45);
+			//color.z = pow(Utils::saturate(color.z / 4), 0.45);
 
 			// Save to Messiah RGMB
-			color.x = scRGBtoMessiahRGB(color.x);
-			color.y = scRGBtoMessiahRGB(color.y);
-			color.z = scRGBtoMessiahRGB(color.z);
-			EncodeRGMB(color);
+			color.x = Utils::scRGBtoMessiahRGB(color.x);
+			color.y = Utils::scRGBtoMessiahRGB(color.y);
+			color.z = Utils::scRGBtoMessiahRGB(color.z);
+			Utils::EncodeRGMB(color);
 
 			outbuffer[index * 4 + 0] = color.z * 255;
 			outbuffer[index * 4 + 1] = color.y * 255;
@@ -180,6 +145,8 @@ std::vector<DirectX::XMFLOAT4> ImageExporter::DumpD2DTarget(DX::DeviceResources*
     CHK(CreateStreamOverRandomAccessStream(ras, IID_PPV_ARGS(&stream)));
 
     auto d2dBitmap = res->GetD2DTargetBitmap();
+	float dpiX = 0, dpiY = 0;
+	d2dBitmap->GetDpi(&dpiX, &dpiY);
     auto d2dSize = d2dBitmap->GetPixelSize();
     auto size = Windows::Foundation::Size(static_cast<float>(d2dSize.width), static_cast<float>(d2dSize.height));
 
@@ -197,7 +164,7 @@ std::vector<DirectX::XMFLOAT4> ImageExporter::DumpD2DTarget(DX::DeviceResources*
     CHK(decode->GetFrame(0, &frame));
     GUID fmt = {};
     CHK(frame->GetPixelFormat(&fmt));
-    CHK(fmt == GUID_WICPixelFormat64bppRGBAHalf ? S_OK : WINCODEC_ERR_UNSUPPORTEDPIXELFORMAT); // FP16
+    CHK(fmt == GUID_WICPixelFormat128bppRGBAFloat ? S_OK : WINCODEC_ERR_UNSUPPORTEDPIXELFORMAT); // FP16
 
     auto width = static_cast<uint32_t>(size.Width);
     auto height = static_cast<uint32_t>(size.Height);

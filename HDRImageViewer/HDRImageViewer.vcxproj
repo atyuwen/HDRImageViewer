@@ -394,6 +394,7 @@
     <ClInclude Include="SimpleTonemapEffect.h" />
     <ClInclude Include="SphereMapEffect.h" />
     <ClInclude Include="SdrOverlayEffect.h" />
+    <ClInclude Include="Utils.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="App.xaml.cpp">

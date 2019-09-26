@@ -12,6 +12,7 @@
 #include "pch.h"
 #include "DirectXPage.xaml.h"
 #include "DirectXHelper.h"
+#include "Utils.h"
 
 using namespace HDRImageViewer;
 
@@ -294,6 +295,24 @@ void HDRImageViewer::DirectXPage::ExportImageToMessiah(_In_ Windows::Storage::St
 		DX::ThrowIfFailed(CreateStreamOverRandomAccessStream(ras, IID_PPV_ARGS(&iStream)));
 		m_renderer->ExportImageToMessiah(iStream.Get(), wicFormat);
 	});
+}
+
+void HDRImageViewer::DirectXPage::PickImageColor(_In_ Windows::UI::Input::PointerPoint^ point)
+{
+	auto x = (int)point->Position.X;
+	auto y = (int)point->Position.Y;
+	auto color = m_renderer->PickImagetColor(x, y);
+
+	float lumiance = 0.2126 * color.x + 0.7152 * color.y + 0.0722 * color.z;
+	int lumianceNits = (int)(lumiance * 80);
+	Luminance->Text = L"Luminance: " + ref new String(std::to_wstring(lumianceNits).c_str()) + L" nits";
+
+	float r = Utils::scRGBtoMessiahRGB(color.x);
+	float g = Utils::scRGBtoMessiahRGB(color.y);
+	float b = Utils::scRGBtoMessiahRGB(color.z);
+	MessiahR->Text = L"R: " + ref new String(std::to_wstring(r).c_str());
+	MessiahG->Text = L"G: " + ref new String(std::to_wstring(g).c_str());
+	MessiahB->Text = L"B: " + ref new String(std::to_wstring(b).c_str());
 }
 
 void DirectXPage::UpdateDisplayACState(_In_opt_ AdvancedColorInfo^ info)
@@ -604,6 +623,8 @@ void DirectXPage::OnPointerPressed(_In_ Object^ sender, _In_ PointerRoutedEventA
 {
     swapChainPanel->CapturePointer(e->Pointer);
     m_gestureRecognizer->ProcessDownEvent(e->GetCurrentPoint(swapChainPanel));
+
+	PickImageColor(e->GetCurrentPoint(swapChainPanel));
 }
 
 void DirectXPage::OnPointerMoved(_In_ Object^ sender, _In_ PointerRoutedEventArgs^ e)

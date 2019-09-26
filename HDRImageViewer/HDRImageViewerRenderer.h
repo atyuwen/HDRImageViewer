@@ -53,6 +53,7 @@ namespace HDRImageViewer
         ImageInfo LoadImageFromDirectXTex(_In_ Platform::String^ filename, _In_ Platform::String^ extension);
         void      ExportImageToSdr(_In_ IStream* outputStream, GUID wicFormat);
 		void      ExportImageToMessiah(_In_ IStream* outputStream, GUID wicFormat);
+		DirectX::XMFLOAT4 PickImagetColor(int x, int y);
 
         // IDeviceNotify methods handle device lost and restored.
         virtual void OnDeviceLost();
