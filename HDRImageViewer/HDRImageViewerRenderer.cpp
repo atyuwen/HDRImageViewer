@@ -600,7 +600,7 @@ void HDRImageViewerRenderer::UpdateImageTransformState()
 void HDRImageViewerRenderer::ComputeHdrMetadata()
 {
     // Initialize with a sentinel value.
-    m_imageCLL = { -1.0f, -1.0f };
+    m_imageCLL = { -1.0f, -1.0f, -1.0f };
 
     // HDR metadata is not meaningful for SDR or WCG images.
     if ((!m_isComputeSupported) ||
@@ -637,7 +637,7 @@ void HDRImageViewerRenderer::ComputeHdrMetadata()
         );
 
     unsigned int maxCLLbin = 0;
-    unsigned int avgCLLbin = 0; // Average is defined as 50th percentile.
+    unsigned int medCLLbin = 0; // Average is defined as 50th percentile.
     float runningSum = 0.0f; // Cumulative sum of values in histogram is 1.0.
     for (int i = sc_histNumBins - 1; i >= 0; i--)
     {
@@ -651,23 +651,31 @@ void HDRImageViewerRenderer::ComputeHdrMetadata()
 
         if (runningSum > 0.5f)
         {
-            // Note if the entire histogram is 0, avgCLLbin remains at -1.
-            avgCLLbin = i;
+            // Note if the entire histogram is 0, medCLLbin remains at -1.
+            medCLLbin = i;
             break;
         }
     }
 
+	m_imageCLL.avgNits = 0.0f;
+	for (int i = sc_histNumBins - 1; i >= 0; i--)
+	{
+		float binNorm = static_cast<float>(i) / sc_histNumBins;
+		float nits = powf(binNorm, 1 / sc_histGamma) * sc_histMaxNits;
+		m_imageCLL.avgNits += nits * histogramData[i];
+	}
+
     float binNormMax = static_cast<float>(maxCLLbin) / static_cast<float>(sc_histNumBins);
     m_imageCLL.maxNits = powf(binNormMax, 1 / sc_histGamma) * sc_histMaxNits;
 
-    float binNormAvg = static_cast<float>(avgCLLbin) / static_cast<float>(sc_histNumBins);
-    m_imageCLL.medNits = powf(binNormAvg, 1 / sc_histGamma) * sc_histMaxNits;
+    float binNormMed = static_cast<float>(medCLLbin) / static_cast<float>(sc_histNumBins);
+    m_imageCLL.medNits = powf(binNormMed, 1 / sc_histGamma) * sc_histMaxNits;
 
     // Some drivers have a bug where histogram will always return 0. Or some images are pure black.
     // Treat these cases as unknown.
     if (m_imageCLL.maxNits == 0.0f)
     {
-        m_imageCLL = { -1.0f, -1.0f };
+        m_imageCLL = { -1.0f, -1.0f, -1.0f };
     }
 
     // HDR metadata computation is completed before the app rendering options are known, so don't

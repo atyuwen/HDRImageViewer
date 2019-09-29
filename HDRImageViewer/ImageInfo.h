@@ -18,5 +18,6 @@ namespace HDRImageViewer
     {
         float   maxNits;
         float   medNits;
+		float   avgNits;
     };
 }

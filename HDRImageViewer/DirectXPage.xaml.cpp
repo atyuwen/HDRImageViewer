@@ -14,6 +14,8 @@
 #include "DirectXHelper.h"
 #include "Utils.h"
 
+#include <iomanip>
+
 using namespace HDRImageViewer;
 
 using namespace concurrency;
@@ -219,14 +221,14 @@ void DirectXPage::LoadImage(_In_ StorageFile^ imageFile)
         ImageMaxCLL->Text = ref new String(cllStr.str().c_str());
 
         std::wstringstream avgStr;
-        avgStr << L"Estimated MedCLL: ";
-        if (m_imageCLL.medNits < 0.0f)
+        avgStr << L"Estimated AvgCLL: ";
+        if (m_imageCLL.avgNits < 0.0f)
         {
             avgStr << L"N/A";
         }
         else
         {
-            avgStr << std::to_wstring(static_cast<int>(m_imageCLL.medNits)) << L" nits";
+            avgStr << std::to_wstring(static_cast<int>(m_imageCLL.avgNits)) << L" nits";
         }
 
         ImageAvgCLL->Text = ref new String(avgStr.str().c_str());
@@ -302,9 +304,13 @@ void HDRImageViewer::DirectXPage::ExportImageToMessiah(_In_ Windows::Storage::St
 void HDRImageViewer::DirectXPage::PickImageColor(_In_ Windows::UI::Input::PointerPoint^ point)
 {
 	auto color = m_deviceResources->ReadPixel(point->Position.X, point->Position.Y);
-	float lumiance = 0.2126 * color.x + 0.7152 * color.y + 0.0722 * color.z;
-	int lumianceNits = (int)(lumiance * 80);
-	Luminance->Text = L"Luminance: " + ref new String(std::to_wstring(lumianceNits).c_str()) + L" nits";
+	float lumiance = (0.2126 * color.x + 0.7152 * color.y + 0.0722 * color.z) * 80;
+	std::wostringstream lumianceNits;
+	if (lumiance >= 10.0)
+		lumianceNits << (int)lumiance;
+	else
+		lumianceNits << std::setprecision(2) << lumiance;
+	Luminance->Text = L"Luminance: " + ref new String(lumianceNits.str().c_str()) + L" nits";
 
 	float r = Utils::scRGBtoMessiahRGB(color.x);
 	float g = Utils::scRGBtoMessiahRGB(color.y);

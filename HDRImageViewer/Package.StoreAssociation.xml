@@ -1,7 +1,7 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <StoreAssociation xmlns="http://schemas.microsoft.com/appx/2010/storeassociation">
   <Publisher>CN=DC282004-FA5B-46E0-8880-6E68BFA41465</Publisher>
-  <PublisherDisplayName>Simon Tao</PublisherDisplayName>
+  <PublisherDisplayName>Messiah Engine Team</PublisherDisplayName>
   <DeveloperAccountType>MSA</DeveloperAccountType>
   <GeneratePackageHash>http://www.w3.org/2001/04/xmlenc#sha256</GeneratePackageHash>
   <SupportedLocales>
@@ -361,8 +361,7 @@
   <ProductReservedInfo>
     <MainPackageIdentityName>24700lepusmagnum.HDRandWCGImageViewer</MainPackageIdentityName>
     <ReservedNames>
-      <ReservedName>HDR and WCG Image Viewer</ReservedName>
-      <ReservedName>HDR + WCG Image Viewer</ReservedName>
+      <ReservedName>HDR Image Viewer</ReservedName>
     </ReservedNames>
   </ProductReservedInfo>
   <AccountPackageIdentityNames>
