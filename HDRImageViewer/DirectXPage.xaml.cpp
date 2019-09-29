@@ -330,11 +330,11 @@ void DirectXPage::UpdateDisplayACState(_In_opt_ AdvancedColorInfo^ info)
     if (maxl == 0)
     {
         // Luminance value of 0 means that no valid data was provided by the display.
-        DisplayPeakLuminance->Text = L"Peak luminance: Unknown";
+        DisplayPeakLuminance->Text = L"Max luminance: Unknown";
     }
     else
     {
-        DisplayPeakLuminance->Text = L"Peak luminance: " + ref new String(std::to_wstring(maxl).c_str()) + L" nits";
+        DisplayPeakLuminance->Text = L"Max luminance: " + ref new String(std::to_wstring(maxl).c_str()) + L" nits";
     }
 
 	if (minl == 0)
@@ -343,18 +343,19 @@ void DirectXPage::UpdateDisplayACState(_In_opt_ AdvancedColorInfo^ info)
 	}
 	else
 	{
-		DisplayMinLuminance->Text = L"Min luminance: " + ref new String(std::to_wstring(minl).c_str()) + L" nits";
+		std::wostringstream oss;
+		oss << minl;
+		DisplayMinLuminance->Text = L"Min luminance: " + ref new String(oss.str().c_str()) + L" nits";
 	}
 
 	if (maxfall == 0)
 	{
-		DisplayMaxFALL->Text = L"Max avg luminance: Unknown";
+		DisplayMaxFALL->Text = L"Max FALL: Unknown";
 	}
 	else
 	{
-		DisplayMaxFALL->Text = L"Max avg luminance: " + ref new String(std::to_wstring(maxfall).c_str()) + L" nits";
+		DisplayMaxFALL->Text = L"Max FALL: " + ref new String(std::to_wstring(maxfall).c_str()) + L" nits";
 	}
-
 
     if (oldDispKind == newDispKind)
     {
