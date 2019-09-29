@@ -113,7 +113,9 @@
             <MenuFlyoutSeparator />
             <TextBlock Style="{StaticResource SectionTitle}">Display information</TextBlock>
             <TextBlock Style="{StaticResource InfoLine}" x:Name="DisplayACState">Kind:</TextBlock>
-            <TextBlock Style="{StaticResource InfoLine}" x:Name="DisplayPeakLuminance">Peak luminance:</TextBlock>
+			<TextBlock Style="{StaticResource InfoLine}" x:Name="DisplayPeakLuminance">Peak luminance:</TextBlock>
+			<TextBlock Style="{StaticResource InfoLine}" x:Name="DisplayMinLuminance">Min luminance:</TextBlock>
+			<TextBlock Style="{StaticResource InfoLine}" x:Name="DisplayMaxFALL">Max avg luminance:</TextBlock>
 			<MenuFlyoutSeparator />
 			<TextBlock Style="{StaticResource SectionTitle}">Pixel inspector</TextBlock>
 			<TextBlock Style="{StaticResource InfoLine}" x:Name="Luminance">Luminance:</TextBlock>
