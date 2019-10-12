@@ -39,6 +39,66 @@ namespace Utils
 		color.w = a;
 	}
 
+	static float HeatmapToLuminance(DirectX::XMFLOAT4& color)
+	{
+		constexpr int NumStops = 9;
+		DirectX::XMFLOAT4 stops_colors[NumStops] = {
+			{0.0f, 0.0f, 0.0f, 1.0f},
+			{0.0f, 0.0f, 1.0f, 1.0f},
+			{0.0f, 1.0f, 1.0f, 1.0f},
+			{0.0f, 1.0f, 0.0f, 1.0f},
+			{1.0f, 1.0f, 0.0f, 1.0f},
+			{1.0f, 0.2f, 0.0f, 1.0f},
+			{1.0f, 0.0f, 0.0f, 1.0f},
+			{1.0f, 0.0f, 1.0f, 1.0f},
+			{1.0f, 1.0f, 1.0f, 1.0f},
+		};
+
+		float stops_nits[NumStops] = {
+			0.00f,
+			3.16f,
+			10.0f,
+			31.6f,
+			100.f,
+			316.f,
+			1000.f,
+			3160.f,
+			10000.f,
+		};
+
+		constexpr int N = 1000;
+		float luminance = 0;
+		float minError = 100000.0;
+		DirectX::XMVECTOR vc = DirectX::XMLoadFloat4(&color);
+		vc = DirectX::XMVectorDivide(vc, DirectX::XMVectorSet(2.0f, 2.0f, 2.0f, 1.0f));
+
+		for (int i = 0; i < NumStops - 1; ++i)
+		{
+			DirectX::XMFLOAT4& a = stops_colors[i];
+			DirectX::XMFLOAT4& b = stops_colors[i + 1];
+			DirectX::XMVECTOR va = DirectX::XMLoadFloat4(&a);
+			DirectX::XMVECTOR vb = DirectX::XMLoadFloat4(&b);
+
+			float la = stops_nits[i];
+			float lb = stops_nits[i + 1];
+			
+			for (int j = 0; j <= N; ++j)
+			{
+				float s = static_cast<float>(j) / N;
+				DirectX::XMVECTOR vt = DirectX::XMVectorLerp(va, vb, s);
+				DirectX::XMVECTOR dd = DirectX::XMVectorSubtract(vc, vt);
+				DirectX::XMVECTOR len = DirectX::XMVector4Length(dd);
+				float error = DirectX::XMVectorGetX(len);
+				if (error < minError)
+				{
+					minError = error;
+					luminance = la + (lb - la) * s;
+				}
+			}
+		}
+		return luminance;
+	}
+
 	static float half_to_float(uint16 Value) noexcept
 	{
 		uint32 Mantissa = 0;

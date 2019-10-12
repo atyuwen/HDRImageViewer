@@ -304,20 +304,32 @@ void HDRImageViewer::DirectXPage::ExportImageToMessiah(_In_ Windows::Storage::St
 void HDRImageViewer::DirectXPage::PickImageColor(_In_ Windows::UI::Input::PointerPoint^ point)
 {
 	auto color = m_deviceResources->ReadPixel(point->Position.X, point->Position.Y);
-	float lumiance = (0.2126 * color.x + 0.7152 * color.y + 0.0722 * color.z) * 80;
-	std::wostringstream lumianceNits;
-	if (lumiance >= 10.0)
-		lumianceNits << (int)lumiance;
+	float luminance = 0;
+	if (m_renderer->GetRenderEffect() == RenderEffectKind::LuminanceHeatmap)
+	{
+		luminance = Utils::HeatmapToLuminance(color);
+		MessiahR->Text = L"R: N/A";
+		MessiahG->Text = L"G: N/A";
+		MessiahB->Text = L"B: N/A";
+	}
 	else
-		lumianceNits << std::setprecision(2) << lumiance;
-	Luminance->Text = L"Luminance: " + ref new String(lumianceNits.str().c_str()) + L" nits";
+	{
+		luminance = (0.2126 * color.x + 0.7152 * color.y + 0.0722 * color.z) * 80;
+		float r = Utils::scRGBtoMessiahRGB(color.x);
+		float g = Utils::scRGBtoMessiahRGB(color.y);
+		float b = Utils::scRGBtoMessiahRGB(color.z);
+		MessiahR->Text = L"R: " + ref new String(std::to_wstring(r).c_str());
+		MessiahG->Text = L"G: " + ref new String(std::to_wstring(g).c_str());
+		MessiahB->Text = L"B: " + ref new String(std::to_wstring(b).c_str());
+	}
 
-	float r = Utils::scRGBtoMessiahRGB(color.x);
-	float g = Utils::scRGBtoMessiahRGB(color.y);
-	float b = Utils::scRGBtoMessiahRGB(color.z);
-	MessiahR->Text = L"R: " + ref new String(std::to_wstring(r).c_str());
-	MessiahG->Text = L"G: " + ref new String(std::to_wstring(g).c_str());
-	MessiahB->Text = L"B: " + ref new String(std::to_wstring(b).c_str());
+	std::wostringstream luminanceSS;
+	if (luminance >= 10.0)
+		luminanceSS << (int)luminance;
+	else
+		luminanceSS << std::setprecision(2) << luminance;
+
+	Luminance->Text = L"Luminance: " + ref new String(luminanceSS.str().c_str()) + L" nits";
 }
 
 void DirectXPage::UpdateDisplayACState(_In_opt_ AdvancedColorInfo^ info)

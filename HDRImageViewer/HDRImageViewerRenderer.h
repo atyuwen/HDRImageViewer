@@ -54,6 +54,8 @@ namespace HDRImageViewer
         void      ExportImageToSdr(_In_ IStream* outputStream, GUID wicFormat);
 		void      ExportImageToMessiah(_In_ IStream* outputStream, GUID wicFormat);
 
+		RenderEffectKind GetRenderEffect() { return m_renderEffectKind; }
+
         // IDeviceNotify methods handle device lost and restored.
         virtual void OnDeviceLost();
         virtual void OnDeviceRestored();
